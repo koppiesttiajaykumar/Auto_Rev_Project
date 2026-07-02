@@ -1,11 +1,11 @@
 package com.automation.servlet;
 
-import com.automation.model.TestResult;
+//import com.automation.model.TestResult;
 import com.automation.util.DBConfig;
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List; 
+//import java.util.ArrayList;
+//import java.util.List; 
 import java.util.Optional;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
