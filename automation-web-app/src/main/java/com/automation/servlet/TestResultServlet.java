@@ -17,7 +17,7 @@ public class TestResultServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     
     // Database name ko wapas 'automation_rev' kar diya hai aur security parameters jodh diye hain
-    private final String jdbcURL = "jdbc:mysql://192.168.1.25:3306/automation_rev?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC";
+    private final String jdbcURL = "jdbc:mysql://192.168.1.18:3306/automation_rev?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC";
     private final String jdbcUsername = "ajay";
     private final String jdbcPassword = "Ajay@123";
     

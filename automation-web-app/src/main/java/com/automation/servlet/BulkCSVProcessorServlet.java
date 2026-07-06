@@ -117,9 +117,7 @@ public class BulkCSVProcessorServlet extends HttpServlet {
                 stmt.executeBatch();
                 conn.commit(); 
                 
-                for (Path file : csvFiles) {
-                    Files.deleteIfExists(file);
-                }
+                // 🎯 [REMOVED] Deletion loop has been completely removed to keep files safe!
                 
                 request.setAttribute("message", "Successfully processed " + totalFilesProcessed + " files. Total " + totalRowsInserted + " records inserted!");
             } else {
