@@ -4,7 +4,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Bulk CSV Importer</title>
+<title>Dynamic Bulk CSV Importer</title>
 <style>
     * {
         margin: 0;
@@ -18,9 +18,8 @@
         color: #333;
     }
 
-    /* 🧭 Premium Modern Navigation Bar Styling (Same as Dashboard) */
     .navbar {
-        background-color: #1a237e; /* Royal Corporate Blue */
+        background-color: #1a237e; 
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         padding: 0 40px;
         height: 60px;
@@ -67,14 +66,12 @@
         border-bottom: 3px solid transparent;
     }
 
-    /* Hover effect aur Active Page Link highlight */
     .navbar-links a:hover, .navbar-links a.active {
         color: #ffffff;
         background-color: rgba(255, 255, 255, 0.1);
-        border-bottom: 3px solid #00f2fe; /* Glowing cyan underline */
+        border-bottom: 3px solid #00f2fe; 
     }
 
-    /* Page Container */
     .container { 
         background: #fff; 
         padding: 35px; 
@@ -96,23 +93,31 @@
         color: #6c757d; 
         font-size: 15px; 
         line-height: 1.5;
-        margin-bottom: 20px;
+        margin-bottom: 25px;
     }
 
-    .path-highlight { 
-        background: #e8f5e9; 
-        color: #2e7d32; 
-        padding: 12px; 
-        border-radius: 6px; 
-        font-family: 'Courier New', Courier, monospace; 
-        font-weight: bold; 
+    .upload-zone {
+        border: 2px dashed #1a237e;
+        padding: 40px 20px;
+        border-radius: 6px;
+        background: #f0f2ff;
+        margin-bottom: 25px;
+        transition: border-color 0.2s;
+    }
+    
+    .upload-zone:hover {
+        border-color: #00f2fe;
+    }
+
+    .file-input {
+        display: block;
+        width: 100%;
+        margin-top: 15px;
         font-size: 14px;
-        margin: 20px 0; 
-        border: 1px solid #c8e6c9; 
     }
 
     button { 
-        background: #d32f2f; 
+        background: #1a237e; 
         color: white; 
         cursor: pointer; 
         border: none; 
@@ -121,12 +126,12 @@
         border-radius: 6px; 
         width: 100%; 
         font-weight: 600;
-        box-shadow: 0 2px 5px rgba(211, 47, 47, 0.2);
+        box-shadow: 0 2px 5px rgba(26, 35, 126, 0.2);
         transition: background-color 0.15s;
     }
 
     button:hover { 
-        background: #c62828; 
+        background: #0f172a; 
     }
 
     button:active {
@@ -168,15 +173,17 @@
 </nav>
 
 <div class="container">
-    <h2>Daily Automation CSV Processor</h2>
-    <p>Click the button below to process files from <strong>Downloads/csvfiles</strong> directly into MySQL via Stored Procedure.</p>
+    <h2>Daily Automation CSV Uploader</h2>
+    <p>Upload single or multiple CSV files. The data will be dynamically read and securely processed directly into MySQL.</p>
     
-    <div class="path-highlight">
-        📁 Target Folder: Downloads/csvfiles
-    </div>
-    
-    <form action="processBulkCSV" method="post">
-        <button type="submit">Sync Data and Clear Folder</button>
+    <form action="processBulkCSV" method="post" enctype="multipart/form-data">
+        <div class="upload-zone">
+            <label for="csvFiles" style="font-weight:600; color:#1a237e; font-size: 16px;">
+                📁 Drag & Drop or Browse Files
+            </label>
+            <input type="file" id="csvFiles" name="csvFiles" class="file-input" multiple accept=".csv" required />
+        </div>
+        <button type="submit">🚀 Upload and Sync Data</button>
     </form>
 
     <c:if test="${not empty message}">

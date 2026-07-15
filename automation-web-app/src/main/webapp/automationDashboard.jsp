@@ -7,7 +7,6 @@
 <title>Automation Summary Dashboard</title>
 
 <style>
-    /* 🎨 Reset & Base Setup */
     * {
         margin: 0;
         padding: 0;
@@ -20,9 +19,8 @@
         color: #333;
     }
 
-    /* 🧭 Corporate Level Top Navigation Bar */
     .navbar {
-        background-color: #1a237e; /* Royal Corporate Blue */
+        background-color: #1a237e; 
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         padding: 0 40px;
         height: 60px;
@@ -52,9 +50,7 @@
         height: 100%;
     }
 
-    .navbar-links li {
-        height: 100%;
-    }
+    .navbar-links li { height: 100%; }
 
     .navbar-links a {
         color: #cbd5e1;
@@ -72,12 +68,11 @@
     .navbar-links a:hover, .navbar-links a.active {
         color: #ffffff;
         background-color: rgba(255, 255, 255, 0.1);
-        border-bottom: 3px solid #00f2fe; /* Glowing Cyan line */
+        border-bottom: 3px solid #00f2fe; 
     }
 
-    /* 📦 Main Frame Card Layout */
     .container {
-        max-width: 1200px;
+        max-width: 1250px;
         margin: 40px auto;
         background: white;
         padding: 35px;
@@ -93,7 +88,6 @@
         font-weight: 700;
     }
 
-    /* 🛠 Form Configurations Layout */
     .form-row {
         display: flex;
         gap: 20px;
@@ -109,27 +103,11 @@
         min-width: 220px;
     }
 
-    .form-group.checkbox-inline {
-        flex-direction: row;
-        align-items: center;
-        min-width: auto;
-        padding-bottom: 12px;
-    }
-
     label {
         font-weight: 600;
         margin-bottom: 8px;
         color: #495057;
         font-size: 14px;
-    }
-
-    .form-group.checkbox-inline label {
-        margin-bottom: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        font-size: 15px;
     }
 
     select, input[type=date] {
@@ -142,36 +120,12 @@
         background-color: #fff;
     }
 
-    /* Metrics Section Area */
-    .checkboxArea {
-        background: #fdfdfd;
-        padding: 15px 20px;
-        border-radius: 4px;
-        border: 1px solid #e9ecef;
-        margin: 20px 0;
+    .btn-actions-container {
         display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
+        gap: 12px;
     }
 
-    .checkboxArea p {
-        width: 100%;
-        font-weight: 600;
-        color: #495057;
-        font-size: 14px;
-        margin-bottom: -5px;
-    }
-
-    .checkboxArea label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 500;
-        cursor: pointer;
-        font-size: 15px;
-    }
-
-    button {
+    button[type="submit"] {
         padding: 12px 30px;
         background: #0056b3;
         color: white;
@@ -183,9 +137,20 @@
         transition: background-color 0.15s;
     }
 
-    button:hover { background: #004085; }
+    button[type="submit"]:hover { background: #004085; }
 
-    /* 📊 Clean & Crisp Responsive Grid Table Layout */
+    .btn-clear-date {
+        padding: 12px 20px;
+        background: #e2e8f0;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .btn-clear-date:hover { background: #cbd5e1; color: #1e293b; }
+
     .summary-header { margin-top: 40px; margin-bottom: 15px; }
     .summary-header h3 { color: #2c3e50; font-size: 20px; }
     .summary-header .meta-info { font-size: 14px; color: #6c757d; margin-top: 4px; }
@@ -235,20 +200,30 @@
 </style>
 
 <script>
-function toggleDate(){
-    var single = document.getElementById("isSingleDay").checked;
-    var endDiv = document.getElementById("endDateDiv");
-    var endInput = document.getElementById("endDateInput");
-    
-    if(single){
-        endDiv.style.display = "none";
-        endInput.removeAttribute("required");
-    } else {
-        endDiv.style.display = "flex";
-        endInput.setAttribute("required", "required");
+    // 🧹 Clears inputs and auto-submits to load all day logs natively
+    function clearDateAndReload() {
+        document.getElementById("startDateInput").value = "";
+        document.getElementById("endDateInput").value = "";
+        
+        // Form references selection
+        var currentTool = document.getElementsByName("toolName")[0].value;
+        if(currentTool !== "") {
+            document.getElementById("dashboardForm").submit();
+        }
     }
-}
-window.onload = toggleDate;
+
+    // Boundary consistency logic
+    function checkFormValidation(event) {
+        var start = document.getElementById("startDateInput").value;
+        var end = document.getElementById("endDateInput").value;
+
+        if ((start === "" && end !== "") || (start !== "" && end === "")) {
+            alert("Kripya dono dates select karein ya dono ko khali (blank) chhodein.");
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
 </script>
 </head>
 <body>
@@ -266,125 +241,83 @@ window.onload = toggleDate;
 
     <h2>📈 Automation Quality Dashboard</h2>
 
-    <form action="getAutomationSummary" method="get">
+    <form id="dashboardForm" action="getAutomationSummary" method="get" onsubmit="return checkFormValidation(event)">
         <div class="form-row">
             
             <div class="form-group">
                 <label>Select Tool / Module</label>
                 <select name="toolName" required>
                     <option value="">-- Select Tool --</option>
-                    <option value="Automation-Tool" ${searchedTool=='Automation-Tool'?'selected':''}>
-                        Automation-Tool
-                    </option>
-                    <option value="Selenium" ${searchedTool=='Selenium'?'selected':''}>
-                        Selenium
-                    </option>
+                    <option value="Automation-Tool" ${searchedTool=='Automation-Tool'?'selected':''}>Automation-Tool</option>
+                    <option value="Selenium" ${searchedTool=='Selenium'?'selected':''}>Selenium</option>
+                    <option value="Tosca" ${searchedTool == 'Tosca' ? 'selected' : ''}>Tosca</option>
                 </select>
-            </div>
-
-            <div class="form-group checkbox-inline">
-                <label>
-                    <input type="checkbox" id="isSingleDay" name="isSingleDay" value="true" onchange="toggleDate()" ${not empty isSingleDay?'checked':''}>
-                    Single Day
-                </label>
             </div>
 
             <div class="form-group">
                 <label>Start Date</label>
-                <input type="date" name="startDate" value="${startDateRaw}" required>
+                <input type="date" id="startDateInput" name="startDate" value="${startDateRaw}">
             </div>
 
-            <div class="form-group" id="endDateDiv">
+            <div class="form-group">
                 <label>End Date</label>
                 <input type="date" id="endDateInput" name="endDate" value="${endDateRaw}">
             </div>
             
+            <div class="form-group btn-actions-container">
+                <button type="button" class="btn-clear-date" onclick="clearDateAndReload()">Clear Dates</button>
+                <button type="submit">Generate Report</button>
+            </div>
+            
         </div>
-
-        <div class="checkboxArea">
-            <p>Select Metrics to Display</p>
-            <label><input type="checkbox" name="showTotal" value="true" ${not empty showTotal?'checked':''}> Total Test Cases</label>
-            <label><input type="checkbox" name="showPass" value="true" ${not empty showPass?'checked':''}> Total Pass</label>
-            <label><input type="checkbox" name="showFail" value="true" ${not empty showFail?'checked':''}> Total Fail</label>
-            <label><input type="checkbox" name="showPassPer" value="true" ${not empty showPassPer?'checked':''}> Pass %</label>
-            <label><input type="checkbox" name="showFailPer" value="true" ${not empty showFailPer?'checked':''}> Fail %</label>
-        </div>
-
-        <button type="submit">Generate Report</button>
     </form>
 
     <c:if test="${not empty error}">
-        <div class="error">
-            ⚠️ ${error}
-        </div>
+        <div class="error">⚠️ ${error}</div>
     </c:if>
 
     <c:if test="${not empty searchedTool}">
         
-        <c:if test="${empty showTotal && empty showPass && empty showFail && empty showPassPer && empty showFailPer}">
-            <div class="error" style="background:#fff9db; color:#e67e22; border-color:#ffe066;">
-                ℹ️ Table hide context active. Please choose at least one analytical metric above to plot columns.
+        <div class="summary-header">
+            <h3>📊 Date-wise Metric Summary</h3>
+            <div class="meta-info">
+                <strong>Target Application:</strong> ${searchedTool}  |  <strong>Applied Boundary:</strong> ${selectedCriteria}
             </div>
-        </c:if>
+        </div>
 
-        <c:if test="${not empty showTotal || not empty showPass || not empty showFail || not empty showPassPer || not empty showFailPer}">
-            
-            <div class="summary-header">
-                <h3>📊 Date-wise Metric Summary</h3>
-                <div class="meta-info">
-                    <strong>Target Application:</strong> ${searchedTool}  |  <strong>Applied Boundary:</strong> ${selectedCriteria}
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="report-table">
-                    <thead>
+        <div class="table-responsive">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Execution Date</th>
+                        <th>Total Cases</th>
+                        <th>Total Pass</th>
+                        <th>Total Fail</th>
+                        <th>Pass %</th>
+                        <th>Fail %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <c:forEach var="row" items="${summaryResultsList}">
                         <tr>
-                            <th>Execution Date</th>
-                            <c:if test="${not empty showTotal}"><th>Total Cases</th></c:if>
-                            <c:if test="${not empty showPass}"><th>Total Pass</th></c:if>
-                            <c:if test="${not empty showFail}"><th>Total Fail</th></c:if>
-                            <c:if test="${not empty showPassPer}"><th>Pass %</th></c:if>
-                            <c:if test="${not empty showFailPer}"><th>Fail %</th></c:if>
+                            <td style="color: #2c3e50; font-weight: 600;">${row.testDate}</td>
+                            <td>${row.totalCases}</td>
+                            <td class="text-pass">${row.totalPass}</td>
+                            <td class="text-fail">${row.totalFail}</td>
+                            <td class="text-pass">${row.passPercentage}%</td>
+                            <td class="text-fail">${row.failPercentage}%</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <c:forEach var="row" items="${summaryResultsList}">
-                            <tr>
-                                <td style="color: #2c3e50; font-weight: 600;">${row.testDate}</td>
-                                
-                                <c:if test="${not empty showTotal}">
-                                    <td>${row.totalCases}</td>
-                                </c:if>
-                                
-                                <c:if test="${not empty showPass}">
-                                    <td class="text-pass">${row.totalPass}</td>
-                                </c:if>
-                                
-                                <c:if test="${not empty showFail}">
-                                    <td class="text-fail">${row.totalFail}</td>
-                                </c:if>
-                                
-                                <c:if test="${not empty showPassPer}">
-                                    <td class="text-pass">${row.passPercentage}%</td>
-                                </c:if>
-                                
-                                <c:if test="${not empty showFailPer}">
-                                    <td class="text-fail">${failPercentage}%</td>
-                                </c:if>
-                            </tr>
-                        </c:forEach>
-                    </tbody>
-                </table>
+                    </c:forEach>
+                </tbody>
+            </table>
+        </div>
+        
+        <c:if test="${empty summaryResultsList}">
+            <div style="text-align:center; padding: 20px; color:#7f8c8d; font-weight:600;">
+                📭 Selected range data scope returned empty metrics set.
             </div>
-            
-            <c:if test="${empty summaryResultsList}">
-                <div style="text-align:center; padding: 20px; color:#7f8c8d; font-weight:600;">
-                    📭 Selected range data scope returned empty metrics set.
-                </div>
-            </c:if>
-            
         </c:if>
+            
     </c:if>
 
 </div>

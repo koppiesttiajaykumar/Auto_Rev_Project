@@ -1,6 +1,7 @@
 package com.automation.servlet;
 
 import com.automation.model.TestResult;
+import com.automation.util.DBConfig; 
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,62 +17,73 @@ import javax.servlet.http.HttpServletResponse;
 public class TestResultServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     
-    // Database name ko wapas 'automation_rev' kar diya hai aur security parameters jodh diye hain
-    private final String jdbcURL = "jdbc:mysql://192.168.1.18:3306/automation_rev?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC";
-    private final String jdbcUsername = "ajay";
-    private final String jdbcPassword = "Ajay@123";
-    
-    
-    static CallableStatement stmt;
-    
-    
-    
-    public void getTestCaseCount()
-    {
-    	
-    }
-    
+    private final DBConfig dbConfig = new DBConfig();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        String toolName = Optional.ofNullable(request.getParameter("toolName"))
-                                  .map(String::trim)
-                                  .orElse("");
+        String toolName = Optional.ofNullable(request.getParameter("toolName")).map(String::trim).orElse("");
+        String startDate = Optional.ofNullable(request.getParameter("startDate")).map(String::trim).orElse("");
+        String endDate = Optional.ofNullable(request.getParameter("endDate")).map(String::trim).orElse("");
+        String statusFilter = Optional.ofNullable(request.getParameter("statusFilter")).map(String::trim).orElse("ALL");
+        String searchTestCaseName = Optional.ofNullable(request.getParameter("searchTestCaseName")).map(String::trim).orElse("");
 
         List<TestResult> resultList = new ArrayList<>();
+        int passCount = 0;
+        int failCount = 0;
 
         if (!toolName.isEmpty()) {
-            String callProcedure = "{CALL GetToolResults(?)}";
+            String callProcedure = "{CALL GetToolResults(?,?,?,?,?)}";
 
             try {
                 Class.forName("com.mysql.cj.jdbc.Driver");
-                try (Connection conn = DriverManager.getConnection(jdbcURL, jdbcUsername, jdbcPassword);
+                
+                try (Connection conn = DriverManager.getConnection(dbConfig.getUrl(), dbConfig.getUsername(), dbConfig.getPassword());
                      CallableStatement stmt = conn.prepareCall(callProcedure)) {
                     
                     stmt.setString(1, toolName);
                     
+                    // ✅ Fixed: Check with .isEmpty() to handle true blanks safely
+                    if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+                        stmt.setString(2, startDate);
+                        stmt.setString(3, endDate);
+                    } else {
+                        stmt.setString(2, "DEFAULT");
+                        stmt.setString(3, "DEFAULT");
+                    }
+                    
+                    stmt.setString(4, statusFilter);
+                    stmt.setString(5, searchTestCaseName);
+                    
                     try (ResultSet rs = stmt.executeQuery()) {
                         while (rs.next()) {
+                            String currentStatus = Optional.ofNullable(rs.getString("Status")).orElse("").toUpperCase().trim();
+                            String currentTestCaseName = Optional.ofNullable(rs.getString("TestCaseName")).orElse("");
+
                             TestResult result = new TestResult();
                             result.setId(rs.getInt("Id"));
-                          //  result.setClassName(rs.getString("ClassName"));
-                        //    result.setTestCaseName(rs.getString("TestCaseName"));
+                            result.setTestCaseName(currentTestCaseName);
                             result.setStatus(rs.getString("Status"));
                             result.setTestCase(rs.getString("TestCase"));
                             result.setModuleName(rs.getString("ModuleName"));
                             result.setSuiteName(rs.getString("SuiteName"));
-                        //    result.setOperatingBrowser(rs.getString("OperatingBrowser"));
-                          //  result.setBuildNo(rs.getString("BuildNo"));
-                            result.setTimeInSeconds(rs.getBigDecimal("TimeInSeconds").doubleValue());
+                            result.setTimeInSeconds(rs.getBigDecimal("TimeInSeconds") != null ? rs.getBigDecimal("TimeInSeconds").doubleValue() : 0.0);
                             result.setEnvironment(rs.getString("Environment"));
                             
                             if (rs.getTimestamp("TestDate") != null) {
                                 result.setTestDate(rs.getTimestamp("TestDate").toLocalDateTime());
                             }
-                            
                             result.setToolName(rs.getString("ToolName"));
+
+                            if (!searchTestCaseName.isEmpty()) {
+                                if (currentStatus.equals("N") || currentStatus.equals("PASS") || currentStatus.equals("P")) {
+                                    passCount++;
+                                } else if (currentStatus.equals("Y") || currentStatus.equals("FAIL") || currentStatus.equals("F")) {
+                                    failCount++;
+                                }
+                            }
+                            
                             resultList.add(result);
                         }
                     }
@@ -83,6 +95,16 @@ public class TestResultServlet extends HttpServlet {
 
         request.setAttribute("results", resultList);
         request.setAttribute("searchedTool", toolName);
+        request.setAttribute("startDate", startDate);
+        request.setAttribute("endDate", endDate);
+        request.setAttribute("statusFilter", statusFilter);
+        
+        request.setAttribute("displaySearchedName", searchTestCaseName); 
+        request.setAttribute("searchTestCaseName", ""); 
+        
+        request.setAttribute("passCount", passCount);
+        request.setAttribute("failCount", failCount);
+        
         request.getRequestDispatcher("index.jsp").forward(request, response);
     }
 }

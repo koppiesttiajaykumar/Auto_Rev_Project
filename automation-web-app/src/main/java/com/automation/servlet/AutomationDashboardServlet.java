@@ -1,19 +1,16 @@
 package com.automation.servlet;
 
 import com.automation.util.DBConfig;
-
 import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -39,69 +36,52 @@ public class AutomationDashboardServlet extends HttpServlet {
             throws ServletException, IOException {
 
         String toolName = request.getParameter("toolName");
-        String singleDay = request.getParameter("isSingleDay");
         String startDate = request.getParameter("startDate");
         String endDate = request.getParameter("endDate");
 
-        // Retaining parameters back to JSP UI state
+        // Trim and string normalization
+        toolName = (toolName != null) ? toolName.trim() : "";
+        startDate = (startDate != null) ? startDate.trim() : "";
+        endDate = (endDate != null) ? endDate.trim() : "";
+
+        // UI persistent parameters injection
         request.setAttribute("searchedTool", toolName);
-        request.setAttribute("isSingleDay", singleDay);
         request.setAttribute("startDateRaw", startDate);
         request.setAttribute("endDateRaw", endDate);
 
-        // UI Metrics Visibility setup flags
-        request.setAttribute("showTotal", request.getParameter("showTotal"));
-        request.setAttribute("showPass", request.getParameter("showPass"));
-        request.setAttribute("showFail", request.getParameter("showFail"));
-        request.setAttribute("showPassPer", request.getParameter("showPassPer"));
-        request.setAttribute("showFailPer", request.getParameter("showFailPer"));
-
-        if (toolName == null || toolName.trim().isEmpty() || startDate == null || startDate.isEmpty()) {
-            request.setAttribute("error", "Please select Tool and Start Date.");
+        if (toolName.isEmpty()) {
+            request.setAttribute("error", "Please select a Tool to view metrics summary.");
             request.getRequestDispatcher("automationDashboard.jsp").forward(request, response);
             return;
         }
 
-        Timestamp startTimestamp;
-        Timestamp endTimestamp;
         String criteria;
-
-        if ("true".equals(singleDay)) {
-            startTimestamp = Timestamp.valueOf(startDate + " 00:00:00");
-            endTimestamp = Timestamp.valueOf(startDate + " 23:59:59");
-            criteria = "Date : " + startDate;
+        if (!startDate.isEmpty() && !endDate.isEmpty()) {
+            criteria = "Range: " + startDate + " To " + endDate;
         } else {
-            if (endDate == null || endDate.isEmpty()) {
-                request.setAttribute("error", "Please select End Date.");
-                request.getRequestDispatcher("automationDashboard.jsp").forward(request, response);
-                return;
-            }
-            startTimestamp = Timestamp.valueOf(startDate + " 00:00:00");
-            endTimestamp = Timestamp.valueOf(endDate + " 23:59:59");
-            criteria = "Range : " + startDate + " To " + endDate;
+            criteria = "All Lifetime Lifecycle Runs (By Default)";
         }
-
         request.setAttribute("selectedCriteria", criteria);
 
         String procedure = "{CALL GetAutomationSummaryMetrics(?,?,?)}";
         List<Map<String, Object>> summaryList = new ArrayList<>();
-
-        // 🎯 Instantiating DBConfig exactly the way you designed it
         DBConfig dbConfig = new DBConfig();
 
-        // Establishing Connection safely using your non-static methods
-        try (Connection conn = DriverManager.getConnection(
-                    dbConfig.getUrl(), 
-                    dbConfig.getUsername(), 
-                    dbConfig.getPassword());
+        try (Connection conn = DriverManager.getConnection(dbConfig.getUrl(), dbConfig.getUsername(), dbConfig.getPassword());
              CallableStatement stmt = conn.prepareCall(procedure)) {
 
             stmt.setString(1, toolName);
-            stmt.setTimestamp(2, startTimestamp);
-            stmt.setTimestamp(3, endTimestamp);
+            
+            // ✅ Plain string delivery safely bypassed if empty
+            if (!startDate.isEmpty() && !endDate.isEmpty()) {
+                stmt.setString(2, startDate);
+                stmt.setString(3, endDate);
+            } else {
+                stmt.setString(2, "DEFAULT");
+                stmt.setString(3, "DEFAULT");
+            }
             
             try (ResultSet rs = stmt.executeQuery()) {
-                // Fetching the structured layout rows map loop
                 while (rs.next()) {
                     Map<String, Object> row = new HashMap<>();
                     row.put("testDate", rs.getString("TestDate"));
@@ -113,12 +93,11 @@ public class AutomationDashboardServlet extends HttpServlet {
                     summaryList.add(row);
                 }
             }
-
             request.setAttribute("summaryResultsList", summaryList);
 
         } catch (SQLException e) {
             e.printStackTrace();
-            request.setAttribute("error", "Database Error: " + e.getMessage());
+            request.setAttribute("error", "Database System Error: " + e.getMessage());
         }
 
         request.getRequestDispatcher("automationDashboard.jsp").forward(request, response);
