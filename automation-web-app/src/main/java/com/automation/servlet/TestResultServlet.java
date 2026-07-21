@@ -23,18 +23,22 @@ public class TestResultServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
+        // 1. Frontend Form se saare parameters capture karein
         String toolName = Optional.ofNullable(request.getParameter("toolName")).map(String::trim).orElse("");
         String startDate = Optional.ofNullable(request.getParameter("startDate")).map(String::trim).orElse("");
         String endDate = Optional.ofNullable(request.getParameter("endDate")).map(String::trim).orElse("");
         String statusFilter = Optional.ofNullable(request.getParameter("statusFilter")).map(String::trim).orElse("ALL");
         String searchTestCaseName = Optional.ofNullable(request.getParameter("searchTestCaseName")).map(String::trim).orElse("");
+        String automationOwnerFilter = Optional.ofNullable(request.getParameter("automationOwnerFilter")).map(String::trim).orElse("ALL");
 
         List<TestResult> resultList = new ArrayList<>();
         int passCount = 0;
         int failCount = 0;
 
+        // 2. Data load tabhi hoga jab tool select kiya gaya ho (Blank load blocker)
         if (!toolName.isEmpty()) {
-            String callProcedure = "{CALL GetToolResults(?,?,?,?,?)}";
+            // Updated syntax mapping pointing exactly to 6 question mark slots
+            String callProcedure = "{CALL GetToolResults(?,?,?,?,?,?)}";
 
             try {
                 Class.forName("com.mysql.cj.jdbc.Driver");
@@ -44,7 +48,7 @@ public class TestResultServlet extends HttpServlet {
                     
                     stmt.setString(1, toolName);
                     
-                    // ✅ Fixed: Check with .isEmpty() to handle true blanks safely
+                    // Date boundaries configuration
                     if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
                         stmt.setString(2, startDate);
                         stmt.setString(3, endDate);
@@ -55,6 +59,7 @@ public class TestResultServlet extends HttpServlet {
                     
                     stmt.setString(4, statusFilter);
                     stmt.setString(5, searchTestCaseName);
+                    stmt.setString(6, automationOwnerFilter);
                     
                     try (ResultSet rs = stmt.executeQuery()) {
                         while (rs.next()) {
@@ -75,7 +80,11 @@ public class TestResultServlet extends HttpServlet {
                                 result.setTestDate(rs.getTimestamp("TestDate").toLocalDateTime());
                             }
                             result.setToolName(rs.getString("ToolName"));
+                            
+                            // Fetch the Automation Owner string from ResultSet row cell
+                            result.setAutomationOwner(rs.getString("AutomationOwner"));
 
+                            // Pass and Fail counters verification based on exact test case search
                             if (!searchTestCaseName.isEmpty()) {
                                 if (currentStatus.equals("N") || currentStatus.equals("PASS") || currentStatus.equals("P")) {
                                     passCount++;
@@ -93,13 +102,18 @@ public class TestResultServlet extends HttpServlet {
             }
         }
 
+        // 3. Request scope variables back to JSP mapping panel
         request.setAttribute("results", resultList);
         request.setAttribute("searchedTool", toolName);
         request.setAttribute("startDate", startDate);
         request.setAttribute("endDate", endDate);
         request.setAttribute("statusFilter", statusFilter);
+        request.setAttribute("automationOwnerFilter", automationOwnerFilter);
         
+        // Niche blue badge ko value dene ke liye displaySearchedName set rahega
         request.setAttribute("displaySearchedName", searchTestCaseName); 
+        
+        // ✅ FIXED BOX: Input text box ko completely khali (blank) karne ke liye empty string bhejenge
         request.setAttribute("searchTestCaseName", ""); 
         
         request.setAttribute("passCount", passCount);
